@@ -32,6 +32,8 @@ type Values struct {
 	IterationDelayMsSet  bool // tracks if iteration_delay_ms was explicitly set
 	TaskRetryCount       int
 	TaskRetryCountSet    bool // tracks if task_retry_count was explicitly set
+	MaxIterations        int
+	MaxIterationsSet     bool // tracks if max_iterations was explicitly set
 	FinalizeEnabled      bool
 	FinalizeEnabledSet   bool // tracks if finalize_enabled was explicitly set
 	WorktreeEnabled      bool
@@ -229,6 +231,17 @@ func (vl *valuesLoader) parseValuesFromBytes(data []byte) (Values, error) {
 		values.TaskRetryCount = val
 		values.TaskRetryCountSet = true
 	}
+	if key, err := section.GetKey("max_iterations"); err == nil {
+		val, intErr := key.Int()
+		if intErr != nil {
+			return Values{}, fmt.Errorf("invalid max_iterations: %w", intErr)
+		}
+		if val < 1 {
+			return Values{}, fmt.Errorf("invalid max_iterations: must be positive, got %d", val)
+		}
+		values.MaxIterations = val
+		values.MaxIterationsSet = true
+	}
 
 	// finalize settings
 	if key, err := section.GetKey("finalize_enabled"); err == nil {
@@ -342,6 +355,18 @@ func (dst *Values) mergeFrom(src *Values) {
 		dst.TaskRetryCount = src.TaskRetryCount
 		dst.TaskRetryCountSet = true
 	}
+	if src.MaxIterationsSet {
+		dst.MaxIterations = src.MaxIterations
+		dst.MaxIterationsSet = true
+	}
+
+	dst.mergeExtraFrom(src)
+	dst.mergeNotifyFrom(src)
+}
+
+// mergeExtraFrom merges feature flags, paths, and error patterns from src into dst.
+// called from mergeFrom to manage cyclomatic complexity.
+func (dst *Values) mergeExtraFrom(src *Values) {
 	if src.FinalizeEnabledSet {
 		dst.FinalizeEnabled = src.FinalizeEnabled
 		dst.FinalizeEnabledSet = true
@@ -365,8 +390,6 @@ func (dst *Values) mergeFrom(src *Values) {
 	if len(src.CodexErrorPatterns) > 0 {
 		dst.CodexErrorPatterns = src.CodexErrorPatterns
 	}
-
-	dst.mergeNotifyFrom(src)
 }
 
 // mergeNotifyFrom merges notification-related fields from src into dst.

@@ -133,6 +133,9 @@ func TestValuesLoader_Load_InvalidConfig(t *testing.T) {
 		{name: "negative task_retry_count", config: "task_retry_count = -1", errPart: "task_retry_count"},
 		{name: "negative codex_timeout_ms", config: "codex_timeout_ms = -100", errPart: "codex_timeout_ms"},
 		{name: "negative iteration_delay_ms", config: "iteration_delay_ms = -50", errPart: "iteration_delay_ms"},
+		{name: "invalid max_iterations", config: "max_iterations = abc", errPart: "max_iterations"},
+		{name: "zero max_iterations", config: "max_iterations = 0", errPart: "max_iterations"},
+		{name: "negative max_iterations", config: "max_iterations = -5", errPart: "max_iterations"},
 	}
 
 	for _, tc := range tests {
@@ -357,6 +360,72 @@ func TestValues_mergeFrom_WorktreeEnabled(t *testing.T) {
 	})
 }
 
+func TestValuesLoader_Load_MaxIterations(t *testing.T) {
+	t.Run("parse max_iterations", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgPath := filepath.Join(tmpDir, "config")
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`max_iterations = 100`), 0o600))
+
+		loader := newValuesLoader(defaultsFS)
+		values, err := loader.Load("", cfgPath)
+		require.NoError(t, err)
+		assert.Equal(t, 100, values.MaxIterations)
+		assert.True(t, values.MaxIterationsSet)
+	})
+
+	t.Run("not set uses default zero", func(t *testing.T) {
+		loader := newValuesLoader(defaultsFS)
+		values, err := loader.Load("", "")
+		require.NoError(t, err)
+		assert.Equal(t, 0, values.MaxIterations)
+		assert.False(t, values.MaxIterationsSet)
+	})
+
+	t.Run("local overrides global", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		globalCfg := filepath.Join(tmpDir, "global")
+		localCfg := filepath.Join(tmpDir, "local")
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`max_iterations = 200`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`max_iterations = 25`), 0o600))
+
+		loader := newValuesLoader(defaultsFS)
+		values, err := loader.Load(localCfg, globalCfg)
+		require.NoError(t, err)
+		assert.Equal(t, 25, values.MaxIterations)
+		assert.True(t, values.MaxIterationsSet)
+	})
+
+	t.Run("minimum value is 1", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgPath := filepath.Join(tmpDir, "config")
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`max_iterations = 1`), 0o600))
+
+		loader := newValuesLoader(defaultsFS)
+		values, err := loader.Load("", cfgPath)
+		require.NoError(t, err)
+		assert.Equal(t, 1, values.MaxIterations)
+		assert.True(t, values.MaxIterationsSet)
+	})
+}
+
+func TestValues_mergeFrom_MaxIterations(t *testing.T) {
+	t.Run("set flag merges", func(t *testing.T) {
+		dst := Values{MaxIterations: 50, MaxIterationsSet: false}
+		src := Values{MaxIterations: 100, MaxIterationsSet: true}
+		dst.mergeFrom(&src)
+		assert.Equal(t, 100, dst.MaxIterations)
+		assert.True(t, dst.MaxIterationsSet)
+	})
+
+	t.Run("unset flag does not merge", func(t *testing.T) {
+		dst := Values{MaxIterations: 100, MaxIterationsSet: true}
+		src := Values{MaxIterations: 0, MaxIterationsSet: false}
+		dst.mergeFrom(&src)
+		assert.Equal(t, 100, dst.MaxIterations)
+		assert.True(t, dst.MaxIterationsSet)
+	})
+}
+
 func TestValuesLoader_Load_AllValuesFromUserConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config")
@@ -372,6 +441,7 @@ codex_timeout_ms = 1000
 codex_sandbox = none
 iteration_delay_ms = 500
 task_retry_count = 5
+max_iterations = 75
 plans_dir = my/plans
 `
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
@@ -392,6 +462,8 @@ plans_dir = my/plans
 	assert.Equal(t, 500, values.IterationDelayMs)
 	assert.Equal(t, 5, values.TaskRetryCount)
 	assert.True(t, values.TaskRetryCountSet)
+	assert.Equal(t, 75, values.MaxIterations)
+	assert.True(t, values.MaxIterationsSet)
 	assert.Equal(t, "my/plans", values.PlansDir)
 }
 

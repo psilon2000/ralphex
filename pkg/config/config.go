@@ -37,6 +37,7 @@ const (
 //   - TaskRetryCountSet: tracks if task_retry_count was explicitly set
 //   - FinalizeEnabledSet: tracks if finalize_enabled was explicitly set
 //   - WorktreeEnabledSet: tracks if use_worktree was explicitly set
+//   - MaxIterationsSet: tracks if max_iterations was explicitly set
 type Config struct {
 	ClaudeCommand string `json:"claude_command"`
 	ClaudeArgs    string `json:"claude_args"`
@@ -57,6 +58,8 @@ type Config struct {
 	IterationDelayMsSet bool `json:"-"` // tracks if iteration_delay_ms was explicitly set in config
 	TaskRetryCount      int  `json:"task_retry_count"`
 	TaskRetryCountSet   bool `json:"-"` // tracks if task_retry_count was explicitly set in config
+	MaxIterations       int  `json:"max_iterations"`
+	MaxIterationsSet    bool `json:"-"` // tracks if max_iterations was explicitly set in config
 
 	FinalizeEnabled    bool `json:"finalize_enabled"`
 	FinalizeEnabledSet bool `json:"-"` // tracks if finalize_enabled was explicitly set in config
@@ -242,6 +245,8 @@ func loadConfigFromDirs(globalDir, localDir string) (*Config, error) {
 		IterationDelayMsSet:  values.IterationDelayMsSet,
 		TaskRetryCount:       values.TaskRetryCount,
 		TaskRetryCountSet:    values.TaskRetryCountSet,
+		MaxIterations:        values.MaxIterations,
+		MaxIterationsSet:     values.MaxIterationsSet,
 		FinalizeEnabled:      values.FinalizeEnabled,
 		FinalizeEnabledSet:   values.FinalizeEnabledSet,
 		WorktreeEnabled:      values.WorktreeEnabled,

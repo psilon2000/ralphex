@@ -108,6 +108,11 @@ iteration_delay_ms = 2000
 # default: 1
 task_retry_count = 1
 
+# max_iterations: maximum task iterations per plan execution
+# can also be set via --max-iterations CLI flag (CLI takes precedence)
+# default: 50
+# max_iterations = 50
+
 # ------------------------------------------------------------------------------
 # paths
 # ------------------------------------------------------------------------------

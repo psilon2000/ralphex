@@ -452,6 +452,28 @@ func TestResolveDefaultBranch(t *testing.T) {
 	}
 }
 
+func TestResolveMaxIterations(t *testing.T) {
+	tests := []struct {
+		name     string
+		cliValue int
+		cfg      *config.Config
+		expected int
+	}{
+		{name: "cli_explicitly_set", cliValue: 25, cfg: &config.Config{MaxIterations: 100, MaxIterationsSet: true}, expected: 25},
+		{name: "cli_explicitly_50", cliValue: 50, cfg: &config.Config{MaxIterations: 30, MaxIterationsSet: true}, expected: 50},
+		{name: "config_when_cli_not_set", cliValue: 0, cfg: &config.Config{MaxIterations: 100, MaxIterationsSet: true}, expected: 100},
+		{name: "default_when_nothing_set", cliValue: 0, cfg: &config.Config{}, expected: 50},
+		{name: "cli_value_no_config", cliValue: 10, cfg: &config.Config{}, expected: 10},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := resolveMaxIterations(tc.cliValue, tc.cfg)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
 func TestSkipFinalizeFlag(t *testing.T) {
 	t.Run("skip_finalize_disables_in_runner", func(t *testing.T) {
 		tmpDir := t.TempDir()

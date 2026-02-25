@@ -30,7 +30,7 @@ import (
 
 // opts holds all command-line options.
 type opts struct {
-	MaxIterations   int      `short:"m" long:"max-iterations" default:"50" description:"maximum task iterations"`
+	MaxIterations   int      `short:"m" long:"max-iterations" description:"maximum task iterations (default: 50)"`
 	Review          bool     `short:"r" long:"review" description:"skip task execution, run full review pipeline"`
 	ExternalOnly    bool     `short:"e" long:"external-only" description:"skip tasks and first review, run only external review loop"`
 	CodexOnly       bool     `short:"c" long:"codex-only" description:"alias for --external-only (deprecated)"`
@@ -405,7 +405,7 @@ func executePlan(ctx context.Context, o opts, req executePlanRequest) error {
 		PlanFile:      req.PlanFile,
 		Branch:        branch,
 		Mode:          req.Mode,
-		MaxIterations: o.MaxIterations,
+		MaxIterations: resolveMaxIterations(o.MaxIterations, req.Config),
 		ProgressPath:  baseLog.Path(),
 	}, req.Colors)
 
@@ -726,7 +726,7 @@ func createRunner(req executePlanRequest, o opts, log processor.Logger, holder *
 		PlanFile:         req.PlanFile,
 		ProgressPath:     log.Path(),
 		Mode:             req.Mode,
-		MaxIterations:    o.MaxIterations,
+		MaxIterations:    resolveMaxIterations(o.MaxIterations, req.Config),
 		Debug:            o.Debug,
 		NoColor:          o.NoColor,
 		IterationDelayMs: req.Config.IterationDelayMs,
@@ -793,12 +793,14 @@ func runPlanMode(ctx context.Context, o opts, req executePlanRequest, selector *
 		}
 	}()
 
+	maxIter := resolveMaxIterations(o.MaxIterations, req.Config)
+
 	// print startup info for plan mode
 	printStartupInfo(startupInfo{
 		PlanDescription: o.PlanDescription,
 		Branch:          branch,
 		Mode:            processor.ModePlan,
-		MaxIterations:   o.MaxIterations,
+		MaxIterations:   maxIter,
 		ProgressPath:    baseLog.Path(),
 	}, req.Colors)
 
@@ -813,7 +815,7 @@ func runPlanMode(ctx context.Context, o opts, req executePlanRequest, selector *
 		PlanDescription:  o.PlanDescription,
 		ProgressPath:     baseLog.Path(),
 		Mode:             processor.ModePlan,
-		MaxIterations:    o.MaxIterations,
+		MaxIterations:    maxIter,
 		Debug:            o.Debug,
 		NoColor:          o.NoColor,
 		IterationDelayMs: req.Config.IterationDelayMs,
@@ -981,6 +983,19 @@ func applyCLIOverrides(o opts, cfg *config.Config) {
 	if o.Worktree {
 		cfg.WorktreeEnabled = true
 	}
+}
+
+// resolveMaxIterations returns the effective max iterations value.
+// precedence: explicit CLI flag > config file > built-in default (50).
+// CLI value of 0 means "not set" (go-flags default when no default tag).
+func resolveMaxIterations(cliValue int, cfg *config.Config) int {
+	if cliValue > 0 {
+		return cliValue
+	}
+	if cfg.MaxIterationsSet {
+		return cfg.MaxIterations
+	}
+	return 50
 }
 
 // resolveDefaultBranch returns the default branch using precedence: CLI flag > config > auto-detect.
