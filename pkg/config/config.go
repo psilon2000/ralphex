@@ -41,8 +41,10 @@ const (
 //   - MaxIterationsSet: tracks if max_iterations was explicitly set
 //   - WaitOnLimitSet: tracks if wait_on_limit was explicitly set
 type Config struct {
-	ClaudeCommand string `json:"claude_command"`
-	ClaudeArgs    string `json:"claude_args"`
+	ClaudeCommand   string `json:"claude_command"`
+	ClaudeArgs      string `json:"claude_args"`
+	OpencodeCommand string `json:"opencode_command"`
+	OpencodeArgs    string `json:"opencode_args"`
 
 	CodexEnabled         bool   `json:"codex_enabled"`
 	CodexEnabledSet      bool   `json:"-"` // tracks if codex_enabled was explicitly set in config
@@ -241,6 +243,8 @@ func loadConfigFromDirs(globalDir, localDir string) (*Config, error) {
 	c := &Config{
 		ClaudeCommand:         values.ClaudeCommand,
 		ClaudeArgs:            values.ClaudeArgs,
+		OpencodeCommand:       values.OpencodeCommand,
+		OpencodeArgs:          values.OpencodeArgs,
 		CodexEnabled:          values.CodexEnabled,
 		CodexEnabledSet:       values.CodexEnabledSet,
 		CodexCommand:          values.CodexCommand,

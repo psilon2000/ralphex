@@ -17,6 +17,8 @@ import (
 type Values struct {
 	ClaudeCommand         string
 	ClaudeArgs            string
+	OpencodeCommand       string
+	OpencodeArgs          string
 	ClaudeErrorPatterns   []string // patterns to detect in claude output (e.g., rate limit messages)
 	CodexEnabled          bool
 	CodexEnabledSet       bool // tracks if codex_enabled was explicitly set
@@ -172,6 +174,12 @@ func (vl *valuesLoader) parseValuesFromBytes(data []byte) (Values, error) {
 	}
 	if key, err := section.GetKey("claude_args"); err == nil {
 		values.ClaudeArgs = key.String()
+	}
+	if key, err := section.GetKey("opencode_command"); err == nil {
+		values.OpencodeCommand = key.String()
+	}
+	if key, err := section.GetKey("opencode_args"); err == nil {
+		values.OpencodeArgs = key.String()
 	}
 
 	// codex settings
@@ -388,6 +396,12 @@ func (dst *Values) mergeFrom(src *Values) {
 	}
 	if src.ClaudeArgs != "" {
 		dst.ClaudeArgs = src.ClaudeArgs
+	}
+	if src.OpencodeCommand != "" {
+		dst.OpencodeCommand = src.OpencodeCommand
+	}
+	if src.OpencodeArgs != "" {
+		dst.OpencodeArgs = src.OpencodeArgs
 	}
 	if src.CodexEnabledSet {
 		dst.CodexEnabled = src.CodexEnabled

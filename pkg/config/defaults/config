@@ -23,6 +23,19 @@ claude_command = claude
 claude_args = --dangerously-skip-permissions --output-format stream-json --verbose
 
 # ------------------------------------------------------------------------------
+# opencode adapter (MVP)
+# ------------------------------------------------------------------------------
+
+# opencode_command: command to run opencode when adapter mode is enabled
+# default: "opencode"
+opencode_command = opencode
+
+# opencode_args: extra args passed to opencode before the generated prompt
+# example: opencode_args = exec --sandbox workspace-write
+# default: empty
+# opencode_args =
+
+# ------------------------------------------------------------------------------
 # codex executor
 # ------------------------------------------------------------------------------
 

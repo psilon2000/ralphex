@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/umputun/ralphex/pkg/config"
 	"github.com/umputun/ralphex/pkg/plan"
 	"github.com/umputun/ralphex/pkg/processor"
 	"github.com/umputun/ralphex/pkg/status"
@@ -237,4 +238,32 @@ func runGitCmd(t *testing.T, dir string, args ...string) {
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
+}
+
+func TestNewOpencodeAdapter(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		t.Setenv(opencodeCommandEnv, "")
+		t.Setenv(opencodeArgsEnv, "")
+		a := newOpencodeAdapter(nil)
+		assert.Equal(t, "opencode", a.command)
+		assert.Empty(t, a.args)
+	})
+
+	t.Run("config values", func(t *testing.T) {
+		t.Setenv(opencodeCommandEnv, "")
+		t.Setenv(opencodeArgsEnv, "")
+		cfg := &config.Config{OpencodeCommand: "opencodex", OpencodeArgs: "exec --sandbox read-only"}
+		a := newOpencodeAdapter(cfg)
+		assert.Equal(t, "opencodex", a.command)
+		assert.Equal(t, []string{"exec", "--sandbox", "read-only"}, a.args)
+	})
+
+	t.Run("env overrides config", func(t *testing.T) {
+		t.Setenv(opencodeCommandEnv, "opencode-env")
+		t.Setenv(opencodeArgsEnv, "exec --json")
+		cfg := &config.Config{OpencodeCommand: "opencodex", OpencodeArgs: "exec --sandbox read-only"}
+		a := newOpencodeAdapter(cfg)
+		assert.Equal(t, "opencode-env", a.command)
+		assert.Equal(t, []string{"exec", "--json"}, a.args)
+	})
 }

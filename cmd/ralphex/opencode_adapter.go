@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/umputun/ralphex/pkg/config"
 	"github.com/umputun/ralphex/pkg/plan"
 	"github.com/umputun/ralphex/pkg/processor"
 	"github.com/umputun/ralphex/pkg/status"
@@ -39,14 +40,30 @@ type opencodeAdapter struct {
 	diffProvider func(ctx context.Context, baseRef string) (string, error)
 }
 
-func newOpencodeAdapter() *opencodeAdapter {
-	command := strings.TrimSpace(os.Getenv(opencodeCommandEnv))
+func newOpencodeAdapter(cfg *config.Config) *opencodeAdapter {
+	command := ""
+	args := ""
+	if cfg != nil {
+		command = strings.TrimSpace(cfg.OpencodeCommand)
+		args = strings.TrimSpace(cfg.OpencodeArgs)
+	}
+
+	envCommand := strings.TrimSpace(os.Getenv(opencodeCommandEnv))
+	if envCommand != "" {
+		command = envCommand
+	}
 	if command == "" {
 		command = "opencode"
 	}
+
+	argStr := strings.TrimSpace(os.Getenv(opencodeArgsEnv))
+	if argStr == "" {
+		argStr = args
+	}
+
 	return &opencodeAdapter{
 		command:      command,
-		args:         strings.Fields(strings.TrimSpace(os.Getenv(opencodeArgsEnv))),
+		args:         strings.Fields(argStr),
 		runner:       execOpencodeRunner{},
 		diffProvider: gitDiffOutput,
 	}

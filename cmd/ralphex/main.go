@@ -509,7 +509,7 @@ func runExecutionLoop(ctx context.Context, o opts, req executePlanRequest, log p
 
 func runWithOpencodeAdapter(ctx context.Context, o opts, req executePlanRequest, log processor.Logger,
 	holder *status.PhaseHolder) error {
-	adapter := newOpencodeAdapter()
+	adapter := newOpencodeAdapter(req.Config)
 
 	switch req.Mode {
 	case processor.ModeTasksOnly:

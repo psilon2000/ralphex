@@ -443,6 +443,8 @@ func TestValuesLoader_Load_AllValuesFromUserConfig(t *testing.T) {
 	configContent := `
 claude_command = /custom/claude
 claude_args = --custom
+opencode_command = /custom/opencode
+opencode_args = exec --json
 codex_enabled = false
 codex_command = /custom/codex
 codex_model = custom-model
@@ -462,6 +464,8 @@ plans_dir = my/plans
 
 	assert.Equal(t, "/custom/claude", values.ClaudeCommand)
 	assert.Equal(t, "--custom", values.ClaudeArgs)
+	assert.Equal(t, "/custom/opencode", values.OpencodeCommand)
+	assert.Equal(t, "exec --json", values.OpencodeArgs)
 	assert.False(t, values.CodexEnabled)
 	assert.True(t, values.CodexEnabledSet)
 	assert.Equal(t, "/custom/codex", values.CodexCommand)
@@ -480,17 +484,22 @@ plans_dir = my/plans
 func TestValues_mergeFrom(t *testing.T) {
 	t.Run("merge non-empty values", func(t *testing.T) {
 		dst := Values{
-			ClaudeCommand: "dst-claude",
-			PlansDir:      "dst-plans",
+			ClaudeCommand:   "dst-claude",
+			OpencodeCommand: "dst-opencode",
+			PlansDir:        "dst-plans",
 		}
 		src := Values{
-			ClaudeCommand: "src-claude",
-			ClaudeArgs:    "src-args",
+			ClaudeCommand:   "src-claude",
+			ClaudeArgs:      "src-args",
+			OpencodeCommand: "src-opencode",
+			OpencodeArgs:    "exec --json",
 		}
 		dst.mergeFrom(&src)
 
 		assert.Equal(t, "src-claude", dst.ClaudeCommand)
 		assert.Equal(t, "src-args", dst.ClaudeArgs)
+		assert.Equal(t, "src-opencode", dst.OpencodeCommand)
+		assert.Equal(t, "exec --json", dst.OpencodeArgs)
 		assert.Equal(t, "dst-plans", dst.PlansDir)
 	})
 
@@ -574,6 +583,8 @@ func TestValuesLoader_parseValuesFromBytes(t *testing.T) {
 		data := []byte(`
 claude_command = /custom/claude
 claude_args = --custom-arg
+opencode_command = /custom/opencode
+opencode_args = exec --json
 codex_enabled = false
 codex_command = /custom/codex
 codex_model = gpt-5
@@ -589,6 +600,8 @@ plans_dir = custom/plans
 
 		assert.Equal(t, "/custom/claude", values.ClaudeCommand)
 		assert.Equal(t, "--custom-arg", values.ClaudeArgs)
+		assert.Equal(t, "/custom/opencode", values.OpencodeCommand)
+		assert.Equal(t, "exec --json", values.OpencodeArgs)
 		assert.False(t, values.CodexEnabled)
 		assert.True(t, values.CodexEnabledSet)
 		assert.Equal(t, "/custom/codex", values.CodexCommand)
