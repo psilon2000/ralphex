@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -56,6 +57,8 @@ type opts struct {
 }
 
 var revision = "unknown"
+
+const opencodeAdapterEnv = "RALPHEX_OPENCODE_ADAPTER"
 
 // resolveVersion returns the best available version string.
 // priority: ldflags revision → module version from go install → VCS commit hash → "unknown".
@@ -422,9 +425,7 @@ func executePlan(ctx context.Context, o opts, req executePlanRequest) error {
 		ProgressPath:  baseLog.Path(),
 	}, req.Colors)
 
-	// create and run the runner
-	r := createRunner(req, o, runnerLog, holder)
-	if runErr := r.Run(ctx); runErr != nil {
+	if runErr := runExecutionLoop(ctx, o, req, runnerLog, holder); runErr != nil {
 		// send failure notification before returning error.
 		// use context.Background() because the parent ctx may be canceled (e.g. SIGINT),
 		// and the notification timeout is applied inside Send() independently.
@@ -495,6 +496,55 @@ func executePlan(ctx context.Context, o opts, req executePlanRequest) error {
 	}
 
 	return nil
+}
+
+func runExecutionLoop(ctx context.Context, o opts, req executePlanRequest, log processor.Logger,
+	holder *status.PhaseHolder) error {
+	if useOpencodeAdapter() && supportsOpencodeAdapterMode(req.Mode) {
+		return runWithOpencodeAdapter(ctx, o, req, log, holder)
+	}
+	r := createRunner(req, o, log, holder)
+	return r.Run(ctx)
+}
+
+func runWithOpencodeAdapter(ctx context.Context, o opts, req executePlanRequest, log processor.Logger,
+	holder *status.PhaseHolder) error {
+	adapter := newOpencodeAdapter()
+
+	switch req.Mode {
+	case processor.ModeTasksOnly:
+		log.Print("opencode adapter: running tasks-only mode")
+		return adapter.runTaskPhase(ctx, req.PlanFile, log)
+	case processor.ModeFull:
+		log.Print("opencode adapter: running task phase")
+		if err := adapter.runTaskPhase(ctx, req.PlanFile, log); err != nil {
+			return err
+		}
+		log.Print("opencode adapter: task phase done, running review phase")
+		return adapter.runReviewPhase(ctx, processor.ModeReview, req.PlanFile, req.BaseRef, log)
+	case processor.ModeReview:
+		log.Print("opencode adapter: running review mode")
+		return adapter.runReviewPhase(ctx, processor.ModeReview, req.PlanFile, req.BaseRef, log)
+	case processor.ModeCodexOnly:
+		log.Print("opencode adapter: running codex-only mode")
+		return adapter.runReviewPhase(ctx, processor.ModeCodexOnly, req.PlanFile, req.BaseRef, log)
+	default:
+		log.Print("opencode adapter: mode not ported yet, using existing runner")
+		r := createRunner(req, o, log, holder)
+		return r.Run(ctx)
+	}
+}
+
+func useOpencodeAdapter() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(opencodeAdapterEnv)))
+	return value == "1" || value == "true" || value == "yes" || value == "on"
+}
+
+func supportsOpencodeAdapterMode(mode processor.Mode) bool {
+	return mode == processor.ModeFull ||
+		mode == processor.ModeTasksOnly ||
+		mode == processor.ModeReview ||
+		mode == processor.ModeCodexOnly
 }
 
 // runWithWorktree creates a worktree, creates the progress logger (before chdir so it lands

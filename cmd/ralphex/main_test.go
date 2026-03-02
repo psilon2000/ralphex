@@ -127,6 +127,50 @@ func TestDetermineMode(t *testing.T) {
 	}
 }
 
+func TestUseOpencodeAdapter(t *testing.T) {
+	tests := []struct {
+		name     string
+		envValue string
+		expected bool
+	}{
+		{name: "unset", envValue: "", expected: false},
+		{name: "zero", envValue: "0", expected: false},
+		{name: "one", envValue: "1", expected: true},
+		{name: "true_upper", envValue: "TRUE", expected: true},
+		{name: "yes", envValue: "yes", expected: true},
+		{name: "on", envValue: "on", expected: true},
+		{name: "off", envValue: "off", expected: false},
+		{name: "spaces", envValue: " 1 ", expected: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(opencodeAdapterEnv, tc.envValue)
+			assert.Equal(t, tc.expected, useOpencodeAdapter())
+		})
+	}
+}
+
+func TestSupportsOpencodeAdapterMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		mode     processor.Mode
+		expected bool
+	}{
+		{name: "full", mode: processor.ModeFull, expected: true},
+		{name: "tasks_only", mode: processor.ModeTasksOnly, expected: true},
+		{name: "review", mode: processor.ModeReview, expected: true},
+		{name: "codex_only", mode: processor.ModeCodexOnly, expected: true},
+		{name: "plan", mode: processor.ModePlan, expected: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, supportsOpencodeAdapterMode(tc.mode))
+		})
+	}
+}
+
 func TestIsWatchOnlyMode(t *testing.T) {
 	tests := []struct {
 		name            string
