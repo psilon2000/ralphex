@@ -17,6 +17,7 @@ Code paths:
 - `cmd/ralphex/opencode_adapter.go`: task/review execution and signal validation.
 - `pkg/config/config.go`: config surface for adapter command/args.
 - `pkg/config/values.go`: config parsing/merge logic for adapter fields.
+- `docs/porting/adapter-e2e-runbook.md`: manual e2e validation steps for adapter mode.
 
 Tests:
 - Unit compatibility: `TestDetermineMode`, `TestValidateFlags`, `TestUseOpencodeAdapter`, `TestSupportsOpencodeAdapterMode`, `TestRunWithOpencodeAdapter`.
@@ -31,6 +32,5 @@ Tests:
 
 ## Post-MVP backlog (not blocking)
 
-- Add end-to-end runbook for adapter mode on toy project (`scripts/prep-toy-test.sh`) with copy-paste commands.
 - Add CI artifact/log collection for adapter smoke failures to speed up debugging.
 - Expand traceability from test names to each individual `MVP-FLAG-*` row.
