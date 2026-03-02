@@ -32,5 +32,7 @@ Tests:
 
 ## Post-MVP backlog (not blocking)
 
-- Add CI artifact/log collection for adapter smoke failures to speed up debugging.
-- Expand traceability from test names to each individual `MVP-FLAG-*` row.
+- No open non-blocking items tracked at the moment.
+- Historical follow-ups completed:
+  - CI artifact/log collection for adapter gate jobs on failures.
+  - Per-ID traceability mapping in `docs/porting/cli-compat-matrix.md`.

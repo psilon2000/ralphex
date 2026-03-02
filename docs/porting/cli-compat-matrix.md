@@ -68,3 +68,27 @@ Test mapping (current):
 - `unit-cli-compat`: `TestDetermineMode`, `TestValidateFlags`, `TestUseOpencodeAdapter`, `TestSupportsOpencodeAdapterMode`, `TestRunWithOpencodeAdapter`
 - `integration-opencode-adapter`: `TestRunTaskPhaseRunsPendingTasks`, `TestRunTaskPhasePropagatesRunnerError`, `TestRunTaskPhaseRequiresPlan`, `TestValidateTaskOutput`, `TestRunReviewPhase`, `TestRunReviewPhaseDiffError`, `TestBuildReviewPrompt`, `TestGitDiffOutput`, `TestNewOpencodeAdapter`
 - `e2e-cli-smoke`: `TestExecOpencodeRunnerSmoke`, `TestOpencodeAdapterTaskPhaseSmoke`, `TestOpencodeAdapterReviewPhaseSmoke`
+
+## Traceability by MVP ID
+
+| ID | Verification artifact | CI job |
+|---|---|---|
+| MVP-CLI-01 | `TestDetermineMode`, `TestRunWithOpencodeAdapter` | `unit-cli-compat` |
+| MVP-CLI-02 | `TestDetermineMode`, `TestRunWithOpencodeAdapter` | `unit-cli-compat` |
+| MVP-CLI-03 | `TestDetermineMode`, `TestRunWithOpencodeAdapter`, `TestRunReviewPhase` | `unit-cli-compat`, `integration-opencode-adapter` |
+| MVP-CLI-04 | `TestDetermineMode`, `TestRunWithOpencodeAdapter`, `TestRunReviewPhase` | `unit-cli-compat`, `integration-opencode-adapter` |
+| MVP-CLI-05 | `TestDetermineMode` (`--codex-only` alias), `TestRunWithOpencodeAdapter` | `unit-cli-compat` |
+| MVP-FLAG-01 | existing CLI execution tests with `MaxIterations` options in `cmd/ralphex/main_test.go` | `build` |
+| MVP-FLAG-02 | existing CLI execution tests and mode wiring with `BaseRef`/external review flow | `build` |
+| MVP-FLAG-03 | `TestRunReviewPhase`, `TestOpencodeAdapterReviewPhaseSmoke` | `integration-opencode-adapter`, `e2e-cli-smoke` |
+| MVP-FLAG-04 | `TestValidateFlags` (non-negative wait), wait override tests in `main_test.go` | `unit-cli-compat`, `build` |
+| MVP-FLAG-05 | existing finalize and execution tests in `cmd/ralphex/main_test.go` | `build` |
+| MVP-FLAG-06 | existing debug-path tests in `cmd/ralphex/main_test.go` | `build` |
+| MVP-FLAG-07 | existing no-color execution tests in `cmd/ralphex/main_test.go` | `build` |
+| MVP-FLAG-08 | version-path tests (`TestResolveVersion`) + CLI version handling in main | `build` |
+| MVP-FLAG-09 | `TestValidateFlags` + `TestPlanFlagConflict` | `unit-cli-compat`, `build` |
+| MVP-FLAG-10 | `TestValidateFlags` | `unit-cli-compat` |
+| MVP-EXIT-01 | success path via unit/integration/smoke tests | all MVP gate jobs |
+| MVP-EXIT-02 | parse/validation errors (`TestValidateFlags`) | `unit-cli-compat` |
+| MVP-EXIT-03 | runtime error paths (`TestRunTaskPhasePropagatesRunnerError`, `TestRunReviewPhaseDiffError`) | `integration-opencode-adapter` |
+| MVP-FLAG-GATE-01 | `TestUseOpencodeAdapter`, `TestRunWithOpencodeAdapter` | `unit-cli-compat` |
