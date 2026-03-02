@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,6 +17,7 @@ import (
 const (
 	opencodeCommandEnv = "RALPHEX_OPENCODE_COMMAND"
 	opencodeArgsEnv    = "RALPHEX_OPENCODE_ARGS"
+	maxDiagOutputChars = 600
 )
 
 type opencodeRunner interface {
@@ -95,7 +97,7 @@ func (a *opencodeAdapter) runTaskPhase(ctx context.Context, planFile string, log
 		args = append(args, prompt)
 		output, runErr := a.runner.Run(ctx, a.command, args...)
 		if runErr != nil {
-			return fmt.Errorf("opencode task %d failed: %w\n%s", task.Number, runErr, strings.TrimSpace(output))
+			return adapterRunError(fmt.Sprintf("task %d", task.Number), a.command, a.args, runErr, output)
 		}
 		if sigErr := validateTaskOutput(output, task.Number); sigErr != nil {
 			return sigErr
@@ -117,10 +119,10 @@ func validateTaskOutput(output string, taskNumber int) error {
 
 func validateSignal(output, expectedSignal, phase string) error {
 	if strings.Contains(output, status.Failed) {
-		return fmt.Errorf("opencode %s returned failed signal", phase)
+		return fmt.Errorf("opencode %s returned failed signal (output: %q)", phase, clipOutput(output))
 	}
 	if !strings.Contains(output, expectedSignal) {
-		return fmt.Errorf("opencode %s missing expected signal %s", phase, expectedSignal)
+		return fmt.Errorf("opencode %s missing expected signal %s (output: %q)", phase, expectedSignal, clipOutput(output))
 	}
 	return nil
 }
@@ -140,7 +142,7 @@ func (a *opencodeAdapter) runReviewPhase(ctx context.Context, mode processor.Mod
 	args = append(args, prompt)
 	output, runErr := a.runner.Run(ctx, a.command, args...)
 	if runErr != nil {
-		return fmt.Errorf("opencode review failed: %w\n%s", runErr, strings.TrimSpace(output))
+		return adapterRunError(string(mode), a.command, a.args, runErr, output)
 	}
 	if sigErr := validateSignal(output, expectedSignal, string(mode)); sigErr != nil {
 		return sigErr
@@ -189,9 +191,29 @@ func gitDiffOutput(ctx context.Context, baseRef string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("git diff: %w: %s", err, strings.TrimSpace(string(out)))
+		return "", fmt.Errorf("git diff: %w (output: %q)", err, clipOutput(string(out)))
 	}
 	return string(out), nil
+}
+
+func adapterRunError(phase, command string, cfgArgs []string, runErr error, output string) error {
+	msg := fmt.Sprintf("opencode %s failed: %v (command: %s %s)", phase, runErr, command, strings.Join(cfgArgs, " "))
+	if out := clipOutput(output); out != "" {
+		msg += fmt.Sprintf(" (output: %q)", out)
+	}
+	var execErr *exec.Error
+	if errors.As(runErr, &execErr) {
+		msg += "; check opencode command config: opencode_command or RALPHEX_OPENCODE_COMMAND"
+	}
+	return errors.New(msg)
+}
+
+func clipOutput(output string) string {
+	out := strings.TrimSpace(output)
+	if len(out) <= maxDiagOutputChars {
+		return out
+	}
+	return out[:maxDiagOutputChars] + "..."
 }
 
 func pendingTasks(pl *plan.Plan) []plan.Task {

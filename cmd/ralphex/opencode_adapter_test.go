@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,6 +109,22 @@ func TestRunTaskPhasePropagatesRunnerError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "opencode task 1 failed")
 	assert.Contains(t, err.Error(), "stderr output")
+}
+
+func TestAdapterRunErrorHintsMissingCommand(t *testing.T) {
+	err := adapterRunError("task 1", "missing-opencode", nil, &exec.Error{Name: "missing-opencode", Err: exec.ErrNotFound}, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "check opencode command config")
+}
+
+func TestClipOutput(t *testing.T) {
+	short := "ok"
+	assert.Equal(t, "ok", clipOutput(short))
+
+	long := strings.Repeat("a", maxDiagOutputChars+50)
+	clipped := clipOutput(long)
+	assert.True(t, len(clipped) > 0)
+	assert.Contains(t, clipped, "...")
 }
 
 func TestValidateTaskOutput(t *testing.T) {
