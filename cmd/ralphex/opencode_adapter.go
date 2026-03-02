@@ -22,6 +22,11 @@ type opencodeRunner interface {
 	Run(ctx context.Context, name string, args ...string) (string, error)
 }
 
+type opencodeAdapterAPI interface {
+	runTaskPhase(ctx context.Context, planFile string, log processor.Logger) error
+	runReviewPhase(ctx context.Context, mode processor.Mode, planFile, baseRef string, log processor.Logger) error
+}
+
 type execOpencodeRunner struct{}
 
 func (r execOpencodeRunner) Run(ctx context.Context, name string, args ...string) (string, error) {

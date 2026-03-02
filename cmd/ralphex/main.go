@@ -60,6 +60,10 @@ var revision = "unknown"
 
 const opencodeAdapterEnv = "RALPHEX_OPENCODE_ADAPTER"
 
+var makeOpencodeAdapter = func(cfg *config.Config) opencodeAdapterAPI {
+	return newOpencodeAdapter(cfg)
+}
+
 // resolveVersion returns the best available version string.
 // priority: ldflags revision → module version from go install → VCS commit hash → "unknown".
 func resolveVersion() string {
@@ -509,7 +513,7 @@ func runExecutionLoop(ctx context.Context, o opts, req executePlanRequest, log p
 
 func runWithOpencodeAdapter(ctx context.Context, o opts, req executePlanRequest, log processor.Logger,
 	holder *status.PhaseHolder) error {
-	adapter := newOpencodeAdapter(req.Config)
+	adapter := makeOpencodeAdapter(req.Config)
 
 	switch req.Mode {
 	case processor.ModeTasksOnly:

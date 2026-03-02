@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -167,6 +168,80 @@ func TestSupportsOpencodeAdapterMode(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, supportsOpencodeAdapterMode(tc.mode))
+		})
+	}
+}
+
+type adapterLogger struct{}
+
+func (l adapterLogger) Print(_ string, _ ...any)         {}
+func (l adapterLogger) PrintRaw(_ string, _ ...any)      {}
+func (l adapterLogger) PrintSection(_ status.Section)    {}
+func (l adapterLogger) PrintAligned(_ string)            {}
+func (l adapterLogger) LogQuestion(_ string, _ []string) {}
+func (l adapterLogger) LogAnswer(_ string)               {}
+func (l adapterLogger) LogDraftReview(_, _ string)       {}
+func (l adapterLogger) Path() string                     { return "" }
+
+type fakeAdapter struct {
+	taskCalls   int
+	reviewCalls []processor.Mode
+	taskErr     error
+	reviewErr   error
+}
+
+func (f *fakeAdapter) runTaskPhase(_ context.Context, _ string, _ processor.Logger) error {
+	f.taskCalls++
+	return f.taskErr
+}
+
+func (f *fakeAdapter) runReviewPhase(_ context.Context, mode processor.Mode, _, _ string, _ processor.Logger) error {
+	f.reviewCalls = append(f.reviewCalls, mode)
+	return f.reviewErr
+}
+
+func TestRunWithOpencodeAdapter(t *testing.T) {
+	origFactory := makeOpencodeAdapter
+	t.Cleanup(func() { makeOpencodeAdapter = origFactory })
+
+	tests := []struct {
+		name            string
+		mode            processor.Mode
+		taskErr         error
+		reviewErr       error
+		expectTaskCalls int
+		expectReview    []processor.Mode
+		expectErrPart   string
+	}{
+		{name: "tasks_only", mode: processor.ModeTasksOnly, expectTaskCalls: 1},
+		{name: "review", mode: processor.ModeReview, expectReview: []processor.Mode{processor.ModeReview}},
+		{name: "codex_only", mode: processor.ModeCodexOnly, expectReview: []processor.Mode{processor.ModeCodexOnly}},
+		{name: "full", mode: processor.ModeFull, expectTaskCalls: 1, expectReview: []processor.Mode{processor.ModeReview}},
+		{name: "full_task_error", mode: processor.ModeFull, taskErr: errors.New("task boom"), expectTaskCalls: 1, expectErrPart: "task boom"},
+		{name: "review_error", mode: processor.ModeReview, reviewErr: errors.New("review boom"), expectReview: []processor.Mode{processor.ModeReview}, expectErrPart: "review boom"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			adapter := &fakeAdapter{taskErr: tc.taskErr, reviewErr: tc.reviewErr}
+			makeOpencodeAdapter = func(*config.Config) opencodeAdapterAPI { return adapter }
+
+			err := runWithOpencodeAdapter(context.Background(), opts{}, executePlanRequest{
+				Mode:     tc.mode,
+				PlanFile: "docs/plans/p.md",
+				BaseRef:  "main",
+				Config:   &config.Config{},
+			}, adapterLogger{}, &status.PhaseHolder{})
+
+			if tc.expectErrPart != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectErrPart)
+			} else {
+				require.NoError(t, err)
+			}
+
+			assert.Equal(t, tc.expectTaskCalls, adapter.taskCalls)
+			assert.Equal(t, tc.expectReview, adapter.reviewCalls)
 		})
 	}
 }

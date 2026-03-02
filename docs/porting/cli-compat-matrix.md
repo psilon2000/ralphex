@@ -65,6 +65,6 @@ Minimum CI job groups:
 - `e2e-cli-smoke`
 
 Test mapping (current):
-- `unit-cli-compat`: `TestDetermineMode`, `TestValidateFlags`, `TestUseOpencodeAdapter`, `TestSupportsOpencodeAdapterMode`
-- `integration-opencode-adapter`: `TestRunTaskPhaseRunsPendingTasks`, `TestRunTaskPhasePropagatesRunnerError`, `TestRunTaskPhaseRequiresPlan`, `TestValidateTaskOutput`, `TestRunReviewPhase`, `TestRunReviewPhaseDiffError`, `TestBuildReviewPrompt`, `TestGitDiffOutput`
+- `unit-cli-compat`: `TestDetermineMode`, `TestValidateFlags`, `TestUseOpencodeAdapter`, `TestSupportsOpencodeAdapterMode`, `TestRunWithOpencodeAdapter`
+- `integration-opencode-adapter`: `TestRunTaskPhaseRunsPendingTasks`, `TestRunTaskPhasePropagatesRunnerError`, `TestRunTaskPhaseRequiresPlan`, `TestValidateTaskOutput`, `TestRunReviewPhase`, `TestRunReviewPhaseDiffError`, `TestBuildReviewPrompt`, `TestGitDiffOutput`, `TestNewOpencodeAdapter`
 - `e2e-cli-smoke`: `TestExecOpencodeRunnerSmoke`

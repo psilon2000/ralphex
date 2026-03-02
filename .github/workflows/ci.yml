@@ -48,7 +48,7 @@ jobs:
       - name: run cli compatibility unit tests
         run: >-
           go test ./cmd/ralphex
-          -run 'TestDetermineMode|TestValidateFlags|TestUseOpencodeAdapter|TestSupportsOpencodeAdapterMode'
+          -run 'TestDetermineMode|TestValidateFlags|TestUseOpencodeAdapter|TestSupportsOpencodeAdapterMode|TestRunWithOpencodeAdapter'
 
   integration-opencode-adapter:
     runs-on: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
       - name: run adapter integration tests
         run: >-
           go test ./cmd/ralphex
-          -run 'TestRunTaskPhaseRunsPendingTasks|TestRunTaskPhasePropagatesRunnerError|TestRunTaskPhaseRequiresPlan|TestValidateTaskOutput|TestRunReviewPhase|TestRunReviewPhaseDiffError|TestBuildReviewPrompt|TestGitDiffOutput'
+          -run 'TestRunTaskPhaseRunsPendingTasks|TestRunTaskPhasePropagatesRunnerError|TestRunTaskPhaseRequiresPlan|TestValidateTaskOutput|TestRunReviewPhase|TestRunReviewPhaseDiffError|TestBuildReviewPrompt|TestGitDiffOutput|TestNewOpencodeAdapter'
 
   e2e-cli-smoke:
     runs-on: ubuntu-latest
