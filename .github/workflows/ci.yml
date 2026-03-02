@@ -74,4 +74,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6
       - name: run adapter command smoke
-        run: go test ./cmd/ralphex -run 'TestExecOpencodeRunnerSmoke'
+        run: >-
+          go test ./cmd/ralphex
+          -run 'TestExecOpencodeRunnerSmoke|TestOpencodeAdapterTaskPhaseSmoke|TestOpencodeAdapterReviewPhaseSmoke'

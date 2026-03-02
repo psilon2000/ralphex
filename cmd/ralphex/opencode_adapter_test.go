@@ -267,3 +267,55 @@ func TestNewOpencodeAdapter(t *testing.T) {
 		assert.Equal(t, []string{"exec", "--json"}, a.args)
 	})
 }
+
+func TestOpencodeAdapterTaskPhaseSmoke(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable script smoke test is unix-specific")
+	}
+
+	planFile := filepath.Join(t.TempDir(), "plan.md")
+	content := "# smoke plan\n\n### Task 1: one\n- [ ] do one\n"
+	require.NoError(t, os.WriteFile(planFile, []byte(content), 0o600))
+
+	script := filepath.Join(t.TempDir(), "fake-opencode.sh")
+	require.NoError(t, os.WriteFile(script, []byte("#!/usr/bin/env sh\nprintf '%s\n' \""+status.Completed+"\"\n"), 0o700))
+
+	a := &opencodeAdapter{command: script, runner: execOpencodeRunner{}, diffProvider: gitDiffOutput}
+	err := a.runTaskPhase(context.Background(), planFile, testLogger{})
+	require.NoError(t, err)
+}
+
+func TestOpencodeAdapterReviewPhaseSmoke(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("git/script smoke test is unix-specific")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	repo := t.TempDir()
+	runGitCmd(t, repo, "init")
+	runGitCmd(t, repo, "config", "user.email", "test@example.com")
+	runGitCmd(t, repo, "config", "user.name", "test")
+
+	f := filepath.Join(repo, "a.txt")
+	require.NoError(t, os.WriteFile(f, []byte("one\n"), 0o600))
+	runGitCmd(t, repo, "add", "a.txt")
+	runGitCmd(t, repo, "commit", "-m", "init")
+
+	require.NoError(t, os.WriteFile(f, []byte("one\ntwo\n"), 0o600))
+	runGitCmd(t, repo, "add", "a.txt")
+	runGitCmd(t, repo, "commit", "-m", "second")
+
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(repo))
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+
+	script := filepath.Join(repo, "fake-opencode.sh")
+	require.NoError(t, os.WriteFile(script, []byte("#!/usr/bin/env sh\nprintf '%s\n' \""+status.ReviewDone+"\"\n"), 0o700))
+
+	a := &opencodeAdapter{command: script, runner: execOpencodeRunner{}, diffProvider: gitDiffOutput}
+	err = a.runReviewPhase(context.Background(), processor.ModeReview, "", "HEAD~1", testLogger{})
+	require.NoError(t, err)
+}
